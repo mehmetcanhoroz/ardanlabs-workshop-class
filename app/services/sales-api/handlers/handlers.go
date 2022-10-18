@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/ardanlabs/service/app/services/sales-api/handlers/probegrp"
-	"github.com/dimfeld/httptreemux/v5"
+	"github.com/ardanlabs/service/foundation/web"
 	"go.uber.org/zap"
 )
 
@@ -19,16 +19,16 @@ type APIMuxConfig struct {
 }
 
 // APIMux constructs a http.Handler with all application routes defined.
-func APIMux(cfg APIMuxConfig) *httptreemux.ContextMux {
-	mux := httptreemux.NewContextMux()
+func APIMux(cfg APIMuxConfig) *web.App {
+	app := web.NewApp(cfg.Shutdown)
 
 	probegrp := probegrp.Handlers{
 		Log: cfg.Log,
 	}
-	mux.Handle(http.MethodGet, "/liveness", probegrp.Liveness)
-	mux.Handle(http.MethodGet, "/readiness", probegrp.Readiness)
+	app.Handle(http.MethodGet, "/liveness", probegrp.Liveness)
+	app.Handle(http.MethodGet, "/readiness", probegrp.Readiness)
 
-	return mux
+	return app
 }
 
 // DebugStandardLibraryMux registers all the debug routes from the standard library
