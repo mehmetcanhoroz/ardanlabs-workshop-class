@@ -2,12 +2,12 @@
 package handlers
 
 import (
-	"encoding/json"
 	"expvar"
 	"net/http"
 	"net/http/pprof"
 	"os"
 
+	"github.com/ardanlabs/service/app/services/sales-api/handlers/probegrp"
 	"github.com/dimfeld/httptreemux/v5"
 	"go.uber.org/zap"
 )
@@ -22,15 +22,11 @@ type APIMuxConfig struct {
 func APIMux(cfg APIMuxConfig) *httptreemux.ContextMux {
 	mux := httptreemux.NewContextMux()
 
-	h := func(w http.ResponseWriter, r *http.Request) {
-		status := struct {
-			Status string
-		}{
-			Status: "OK",
-		}
-		json.NewEncoder(w).Encode(status)
+	probegrp := probegrp.Handlers{
+		Log: cfg.Log,
 	}
-	mux.Handle(http.MethodGet, "/test", h)
+	mux.Handle(http.MethodGet, "/liveness", probegrp.Liveness)
+	mux.Handle(http.MethodGet, "/readiness", probegrp.Readiness)
 
 	return mux
 }
