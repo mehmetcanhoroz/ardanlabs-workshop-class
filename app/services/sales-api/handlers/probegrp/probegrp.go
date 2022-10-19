@@ -17,6 +17,20 @@ type Handlers struct {
 	Build string
 }
 
+func (h Handlers) TestPanic(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	if n := rand.Intn(100); n%2 == 0 {
+		panic("testing panic")
+	}
+
+	status := struct {
+		Status string
+	}{
+		Status: "OK",
+	}
+
+	return web.Respond(ctx, w, status, http.StatusOK)
+}
+
 func (h Handlers) TestError400(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	if n := rand.Intn(100); n%2 == 0 {
 		return v1.NewRequestError(errors.New("we trust this"), http.StatusBadRequest)
