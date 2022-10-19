@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"runtime/debug"
 
+	"github.com/ardanlabs/service/business/web/metrics"
 	"github.com/ardanlabs/service/foundation/web"
 )
 
@@ -23,6 +24,9 @@ func Panics() web.Middleware {
 					// Stack trace will be provided.
 					trace := debug.Stack()
 					err = fmt.Errorf("PANIC [%v] TRACE[%s]", rec, string(trace))
+
+					// Updates the metrics stored in the context.
+					metrics.AddPanics(ctx)
 				}
 			}()
 
