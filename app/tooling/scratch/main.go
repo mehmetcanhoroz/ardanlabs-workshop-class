@@ -55,6 +55,7 @@ func GenToken() error {
 	}
 
 	token := jwt.NewWithClaims(method, claims)
+	token.Header["kid"] = "54bb2165-71e1-41a6-af3e-7da4a0e1e2c1"
 
 	file, err := os.Open("zarf/keys/54bb2165-71e1-41a6-af3e-7da4a0e1e2c1.pem")
 	if err != nil {
@@ -75,13 +76,13 @@ func GenToken() error {
 		return fmt.Errorf("parsing auth private key: %w", err)
 	}
 
-	str, err := token.SignedString(privateKey)
+	tokenStr, err := token.SignedString(privateKey)
 	if err != nil {
 		return fmt.Errorf("signing token: %w", err)
 	}
 
 	fmt.Println("******************************")
-	fmt.Println(str)
+	fmt.Println(tokenStr)
 	fmt.Println("******************************")
 	fmt.Print("\n")
 
@@ -103,6 +104,36 @@ func GenToken() error {
 	if err := pem.Encode(os.Stdout, &publicBlock); err != nil {
 		return fmt.Errorf("encoding to public file: %w", err)
 	}
+
+	// =========================================================================
+
+	// Create the token parser to use. The algorithm used to sign the JWT must be
+	// validated to avoid a critical vulnerability:
+	// https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/
+	parser := jwt.NewParser(jwt.WithValidMethods([]string{"RS256"}))
+
+	keyFunc := func(t *jwt.Token) (any, error) {
+		fmt.Println("*****>", t.Header["kid"])
+		return &privateKey.PublicKey, nil
+	}
+
+	var out struct {
+		jwt.RegisteredClaims
+		Roles []string
+	}
+	token, err = parser.ParseWithClaims(tokenStr, &out, keyFunc)
+	if err != nil {
+		return fmt.Errorf("parsing token: %w", err)
+	}
+
+	if !token.Valid {
+		return errors.New("invalid token")
+	}
+
+	fmt.Println("******************************")
+	fmt.Println("SIGNATURE VERIFIED")
+	fmt.Printf("%#v\n", out)
+	fmt.Println("******************************")
 
 	return nil
 }
